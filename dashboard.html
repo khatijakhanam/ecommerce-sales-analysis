@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>E-Commerce Sales Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --surface2: #22263a;
+    --border: rgba(255,255,255,0.07);
+    --text: #e8eaf0;
+    --muted: #7b82a0;
+    --accent: #4f8ef7;
+    --accent2: #a78bfa;
+    --green: #34d399;
+    --amber: #fbbf24;
+    --red: #f87171;
+    --teal: #2dd4bf;
+    --font: 'Segoe UI', system-ui, sans-serif;
+  }
+
+  body {
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 28px 32px;
+  }
+
+  /* HEADER */
+  .header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 28px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--border);
+  }
+  .header-title { font-size: 22px; font-weight: 600; letter-spacing: -0.3px; }
+  .header-sub { font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .badge-fy {
+    font-size: 11px; background: var(--surface2); color: var(--muted);
+    padding: 5px 12px; border-radius: 20px; border: 1px solid var(--border);
+    white-space: nowrap; margin-top: 4px;
+  }
+
+  /* SECTION LABEL */
+  .section-label {
+    font-size: 10px; font-weight: 600; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--muted);
+    margin: 28px 0 12px;
+  }
+
+  /* KPI GRID */
+  .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  .kpi {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 18px;
+    position: relative;
+    overflow: hidden;
+  }
+  .kpi::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: linear-gradient(90deg, var(--accent), transparent);
+    opacity: 0.5;
+  }
+  .kpi-label { font-size: 11px; color: var(--muted); margin-bottom: 8px; letter-spacing: 0.02em; }
+  .kpi-value { font-size: 24px; font-weight: 600; letter-spacing: -0.5px; }
+  .kpi-trend { font-size: 11px; margin-top: 5px; }
+  .up { color: var(--green); }
+  .down { color: var(--red); }
+  .flat { color: var(--muted); }
+
+  /* CHART GRID */
+  .chart-row { display: grid; grid-template-columns: 2fr 1fr; gap: 14px; margin-top: 4px; }
+  .chart-row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 14px; }
+  .chart-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 20px;
+  }
+  .chart-title { font-size: 13px; font-weight: 500; margin-bottom: 14px; color: var(--text); }
+  .chart-wrap { position: relative; width: 100%; }
+
+  /* LEGEND */
+  .legend {
+    display: flex; flex-wrap: wrap; gap: 12px;
+    font-size: 11px; color: var(--muted); margin-bottom: 10px;
+  }
+  .legend span { display: flex; align-items: center; gap: 5px; }
+  .legend-dot { width: 9px; height: 9px; border-radius: 2px; flex-shrink: 0; }
+
+  /* TABLE */
+  .tbl { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .tbl th {
+    font-size: 10px; font-weight: 600; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--muted);
+    padding: 7px 10px; border-bottom: 1px solid var(--border); text-align: left;
+  }
+  .tbl td { padding: 9px 10px; border-bottom: 1px solid var(--border); color: var(--text); }
+  .tbl tr:last-child td { border-bottom: none; }
+  .tbl tr:hover td { background: var(--surface2); }
+
+  /* BADGES */
+  .badge {
+    display: inline-block; font-size: 10px; font-weight: 600;
+    padding: 3px 8px; border-radius: 20px; letter-spacing: 0.03em;
+  }
+  .badge-green { background: rgba(52,211,153,0.12); color: var(--green); }
+  .badge-blue  { background: rgba(79,142,247,0.12); color: var(--accent); }
+  .badge-amber { background: rgba(251,191,36,0.12);  color: var(--amber); }
+  .badge-red   { background: rgba(248,113,113,0.12); color: var(--red); }
+
+  /* INSIGHT CARDS */
+  .insight-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .insight {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 16px; border-left: 3px solid;
+  }
+  .insight-title { font-size: 13px; font-weight: 500; margin-bottom: 6px; }
+  .insight-body  { font-size: 12px; color: var(--muted); line-height: 1.65; }
+
+  /* SEG BAR */
+  .seg-bar { display: flex; height: 8px; border-radius: 4px; overflow: hidden; margin: 10px 0 14px; }
+
+  /* FOOTER */
+  .footer {
+    margin-top: 32px; padding: 14px 18px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; font-size: 11px; color: var(--muted); line-height: 1.7;
+  }
+  .footer strong { color: var(--text); }
+
+  @media (max-width: 900px) {
+    body { padding: 16px; }
+    .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+    .chart-row, .chart-row2 { grid-template-columns: 1fr; }
+    .insight-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div>
+    <div class="header-title">E-Commerce Sales & Customer Analytics</div>
+    <div class="header-sub">Dataset: UK Online Retail · Jan – Dec 2024 · 5,024 orders · 3,218 customers · Source: Kaggle-modeled simulation</div>
+  </div>
+  <div class="badge-fy">FY 2024</div>
+</div>
+
+<!-- KPIs ROW 1 -->
+<div class="section-label">Key Performance Indicators</div>
+<div class="kpi-grid">
+  <div class="kpi"><div class="kpi-label">Total Revenue</div><div class="kpi-value">$2.47M</div><div class="kpi-trend up">↑ 18.4% vs Last Year</div></div>
+  <div class="kpi"><div class="kpi-label">Total Orders</div><div class="kpi-value">5,024</div><div class="kpi-trend up">↑ 12.1% vs Last Year</div></div>
+  <div class="kpi"><div class="kpi-label">Unique Customers</div><div class="kpi-value">3,218</div><div class="kpi-trend up">↑ 9.3% vs Last Year</div></div>
+  <div class="kpi"><div class="kpi-label">Avg Order Value</div><div class="kpi-value">$491</div><div class="kpi-trend up">↑ 5.6% vs Last Year</div></div>
+</div>
+
+<!-- KPIs ROW 2 -->
+<div class="kpi-grid" style="margin-top: 12px;">
+  <div class="kpi"><div class="kpi-label">Repeat Purchase Rate</div><div class="kpi-value">38.4%</div><div class="kpi-trend up">↑ 3.1 pts</div></div>
+  <div class="kpi"><div class="kpi-label">Avg Customer LTV</div><div class="kpi-value">$768</div><div class="kpi-trend up">↑ 11.2%</div></div>
+  <div class="kpi"><div class="kpi-label">Churn Rate</div><div class="kpi-value">22.1%</div><div class="kpi-trend down">↓ Needs attention</div></div>
+  <div class="kpi"><div class="kpi-label">Gross Margin</div><div class="kpi-value">41.3%</div><div class="kpi-trend flat">— Stable</div></div>
+</div>
+
+<!-- TREND + CATEGORY -->
+<div class="section-label">Sales Trends & Category Mix</div>
+<div class="chart-row">
+  <div class="chart-box">
+    <div class="chart-title">Monthly Revenue — 2024</div>
+    <div class="chart-wrap" style="height: 230px;"><canvas id="trendChart"></canvas></div>
+  </div>
+  <div class="chart-box">
+    <div class="chart-title">Revenue by Category</div>
+    <div class="chart-wrap" style="height: 170px;"><canvas id="catChart"></canvas></div>
+    <div class="legend" style="margin-top: 12px;">
+      <span><span class="legend-dot" style="background:#4f8ef7;"></span>Electronics 40%</span>
+      <span><span class="legend-dot" style="background:#a78bfa;"></span>Fashion 27%</span>
+      <span><span class="legend-dot" style="background:#2dd4bf;"></span>Home 22%</span>
+      <span><span class="legend-dot" style="background:#fbbf24;"></span>Books 11%</span>
+    </div>
+  </div>
+</div>
+
+<!-- PRODUCTS + REGIONS -->
+<div class="chart-row2">
+  <div class="chart-box">
+    <div class="chart-title">Top 5 Products by Revenue</div>
+    <div class="chart-wrap" style="height: 220px;"><canvas id="prodChart"></canvas></div>
+  </div>
+  <div class="chart-box">
+    <div class="chart-title">Regional Sales Distribution</div>
+    <div class="chart-wrap" style="height: 220px;"><canvas id="regionChart"></canvas></div>
+  </div>
+</div>
+
+<!-- SEGMENTATION -->
+<div class="section-label">Customer Segmentation — K-Means RFM Clustering</div>
+<div class="chart-row">
+  <div class="chart-box">
+    <div class="chart-title">Customer Segments by Frequency vs Lifetime Value</div>
+    <div class="seg-bar">
+      <div style="width:22%;background:#4f8ef7;"></div>
+      <div style="width:35%;background:#a78bfa;"></div>
+      <div style="width:43%;background:#3a3f55;"></div>
+    </div>
+    <div class="legend" style="margin-bottom: 14px;">
+      <span><span class="legend-dot" style="background:#4f8ef7;"></span>Champions 22%</span>
+      <span><span class="legend-dot" style="background:#a78bfa;"></span>Loyal 35%</span>
+      <span><span class="legend-dot" style="background:#3a3f55;"></span>At-Risk / New 43%</span>
+    </div>
+    <div class="chart-wrap" style="height: 190px;"><canvas id="segChart"></canvas></div>
+  </div>
+  <div class="chart-box">
+    <div class="chart-title">High-Value Customer Table (Top 8)</div>
+    <table class="tbl">
+      <thead>
+        <tr><th>Customer ID</th><th>Lifetime Value</th><th>Orders</th><th>Segment</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>C-0047</td><td>$4,820</td><td>12</td><td><span class="badge badge-green">Champion</span></td></tr>
+        <tr><td>C-0193</td><td>$4,210</td><td>9</td><td><span class="badge badge-green">Champion</span></td></tr>
+        <tr><td>C-0381</td><td>$3,890</td><td>11</td><td><span class="badge badge-green">Champion</span></td></tr>
+        <tr><td>C-0054</td><td>$3,540</td><td>8</td><td><span class="badge badge-blue">Loyal</span></td></tr>
+        <tr><td>C-0712</td><td>$3,210</td><td>7</td><td><span class="badge badge-blue">Loyal</span></td></tr>
+        <tr><td>C-0229</td><td>$2,980</td><td>6</td><td><span class="badge badge-blue">Loyal</span></td></tr>
+        <tr><td>C-0847</td><td>$2,640</td><td>5</td><td><span class="badge badge-amber">At-Risk</span></td></tr>
+        <tr><td>C-0033</td><td>$2,310</td><td>4</td><td><span class="badge badge-amber">At-Risk</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- FORECAST -->
+<div class="section-label">Sales Forecast — Next 6 Months (Linear Regression)</div>
+<div class="chart-box">
+  <div class="chart-title">Revenue Forecast: Jan – Jun 2025</div>
+  <div class="chart-wrap" style="height: 210px;"><canvas id="forecastChart"></canvas></div>
+</div>
+
+<!-- INSIGHTS -->
+<div class="section-label">Business Insights & Recommendations</div>
+<div class="insight-grid">
+  <div class="insight" style="border-color: #4f8ef7;">
+    <div class="insight-title" style="color:#4f8ef7;">Electronics → Loyalty Gap</div>
+    <div class="insight-body">Electronics generates 40% of revenue but only 18% repeat rate. Introduce a post-purchase loyalty program (points, extended warranty) to improve retention by an estimated 8–12%.</div>
+  </div>
+  <div class="insight" style="border-color: #fbbf24;">
+    <div class="insight-title" style="color:#fbbf24;">November Peak → Capitalize Early</div>
+    <div class="insight-body">November is the highest revenue month (2.4× monthly avg). Launch pre-campaign ads in October to capture early holiday shoppers and extend deal windows into December.</div>
+  </div>
+  <div class="insight" style="border-color: #a78bfa;">
+    <div class="insight-title" style="color:#a78bfa;">At-Risk Segment → Win-Back Campaign</div>
+    <div class="insight-body">43% of customers are At-Risk/New. A targeted email campaign with a 15% discount for customers inactive 60+ days can recover 8–12% churn and lift repeat rate significantly.</div>
+  </div>
+  <div class="insight" style="border-color: #2dd4bf;">
+    <div class="insight-title" style="color:#2dd4bf;">West Region → Untapped Market</div>
+    <div class="insight-body">West region contributes only 11% of revenue despite 22% population coverage. Increase localized ad spend and offer region-specific bundles to unlock latent demand.</div>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<div class="footer">
+  <strong>Dataset Info:</strong> Simulated data modeled after Kaggle's "E-Commerce Sales Dataset" (UCI ML Repo · UK Online Retail). 5,024 orders · 3,218 customers · 4 categories · 5 regions · Jan–Dec 2024.<br>
+  <strong>Methods:</strong> RFM segmentation via K-Means (k=3, StandardScaler) · Sales forecast via sklearn LinearRegression on monthly aggregates · EDA with Pandas, Matplotlib, Seaborn.
+</div>
+
+<!-- CHARTS JS -->
+<script>
+const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const revenue = [148000,134000,162000,178000,195000,210000,188000,221000,235000,268000,312000,221000];
+
+// 1. Monthly trend
+new Chart(document.getElementById('trendChart'), {
+  type: 'line',
+  data: {
+    labels: months,
+    datasets: [{
+      label: 'Revenue',
+      data: revenue,
+      borderColor: '#4f8ef7',
+      backgroundColor: 'rgba(79,142,247,0.08)',
+      fill: true, tension: 0.4,
+      pointRadius: 4, pointBackgroundColor: '#4f8ef7', pointBorderColor: '#0f1117', pointBorderWidth: 2
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#7b82a0', font: { size: 11 } } },
+      y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#7b82a0', font: { size: 11 }, callback: v => '$' + (v/1000).toFixed(0) + 'k' } }
+    }
+  }
+});
+
+// 2. Donut — categories
+new Chart(document.getElementById('catChart'), {
+  type: 'doughnut',
+  data: {
+    labels: ['Electronics','Fashion','Home & Kitchen','Books'],
+    datasets: [{ data: [40,27,22,11], backgroundColor: ['#4f8ef7','#a78bfa','#2dd4bf','#fbbf24'], borderWidth: 0 }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    cutout: '68%',
+    plugins: { legend: { display: false } }
+  }
+});
+
+// 3. Top products bar
+new Chart(document.getElementById('prodChart'), {
+  type: 'bar',
+  data: {
+    labels: ['MacBook Pro','iPhone 15','Samsung TV','Nike Air Max','Dyson V11'],
+    datasets: [{
+      data: [186000,142000,118000,97000,84000],
+      backgroundColor: ['#4f8ef7','#5f9cf8','#7ab0f9','#95c3fa','#b0d5fb'],
+      borderRadius: 5, borderSkipped: false
+    }]
+  },
+  options: {
+    indexAxis: 'y',
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#7b82a0', font: { size: 10 }, callback: v => '$' + (v/1000).toFixed(0) + 'k' } },
+      y: { grid: { display: false }, ticks: { color: '#c4c9de', font: { size: 11 } } }
+    }
+  }
+});
+
+// 4. Region bar
+new Chart(document.getElementById('regionChart'), {
+  type: 'bar',
+  data: {
+    labels: ['Central','North','South','East','West'],
+    datasets: [{
+      data: [610000,580000,520000,490000,270000],
+      backgroundColor: ['#a78bfa','#9078e8','#7a63d0','#644eb8','#3a3f55'],
+      borderRadius: 5, borderSkipped: false
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { grid: { display: false }, ticks: { color: '#7b82a0', font: { size: 11 } } },
+      y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#7b82a0', font: { size: 10 }, callback: v => '$' + (v/1000).toFixed(0) + 'k' } }
+    }
+  }
+});
+
+// 5. Bubble — segmentation
+new Chart(document.getElementById('segChart'), {
+  type: 'bubble',
+  data: {
+    datasets: [
+      { label: 'Champions',  data: [{x:8,y:4800,r:16},{x:9,y:4200,r:14},{x:10,y:3900,r:13}], backgroundColor: 'rgba(79,142,247,0.75)' },
+      { label: 'Loyal',      data: [{x:5,y:2800,r:12},{x:6,y:2500,r:11},{x:4,y:2200,r:10}], backgroundColor: 'rgba(167,139,250,0.75)' },
+      { label: 'At-Risk',    data: [{x:2,y:900,r:9}, {x:1,y:600,r:8}, {x:3,y:1100,r:8}],  backgroundColor: 'rgba(58,63,85,0.9)' }
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: {
+      legend: { labels: { color: '#7b82a0', font: { size: 11 }, boxWidth: 10, boxHeight: 10 } }
+    },
+    scales: {
+      x: { min: 0, max: 12, title: { display: true, text: 'Purchase Frequency', color: '#7b82a0', font: { size: 10 } }, grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#7b82a0', font: { size: 10 } } },
+      y: { min: 0, max: 5500, title: { display: true, text: 'Avg LTV ($)', color: '#7b82a0', font: { size: 10 } }, grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#7b82a0', font: { size: 10 }, callback: v => '$' + (v/1000).toFixed(1) + 'k' } }
+    }
+  }
+});
+
+// 6. Forecast
+const forecastMonths = ['Jan 25','Feb 25','Mar 25','Apr 25','May 25','Jun 25'];
+const predicted = [235000,248000,262000,276000,291000,308000];
+
+new Chart(document.getElementById('forecastChart'), {
+  type: 'line',
+  data: {
+    labels: [...months, ...forecastMonths],
+    datasets: [
+      {
+        label: 'Actual 2024',
+        data: [...revenue, ...Array(6).fill(null)],
+        borderColor: '#4f8ef7', backgroundColor: 'rgba(79,142,247,0.06)',
+        fill: true, tension: 0.4, pointRadius: 3, pointBackgroundColor: '#4f8ef7'
+      },
+      {
+        label: 'Forecast 2025',
+        data: [...Array(12).fill(null), ...predicted],
+        borderColor: '#fbbf24', borderDash: [6,4], backgroundColor: 'rgba(251,191,36,0.06)',
+        fill: true, tension: 0.4, pointRadius: 4, pointBackgroundColor: '#fbbf24'
+      }
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: {
+      legend: { labels: { color: '#7b82a0', font: { size: 11 }, boxWidth: 12, boxHeight: 3 } }
+    },
+    scales: {
+      x: { grid: { display: false }, ticks: { color: '#7b82a0', font: { size: 10 }, maxRotation: 45 } },
+      y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#7b82a0', font: { size: 10 }, callback: v => '$' + (v/1000).toFixed(0) + 'k' } }
+    }
+  }
+});
+</script>
+</body>
+</html>
